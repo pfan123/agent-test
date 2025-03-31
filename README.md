@@ -8,6 +8,6 @@
 # MCP 
 
 - [什么是MCP](https://github.com/punkpeye/awesome-mcp-servers/blob/main/README-zh.md)
+- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk)
 
-- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/sdk)# agent-test
 
