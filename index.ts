@@ -2,6 +2,7 @@
 
 import { ChatOllama } from "@langchain/ollama";
 import { tool } from "@langchain/core/tools";
+import { MemorySaver, interrupt } from "@langchain/langgraph";
 import * as z from "zod";
 
 const model = new ChatOllama({
@@ -13,6 +14,7 @@ const model = new ChatOllama({
   frequencyPenalty: 0,
   presencePenalty: 0,
   streaming: true,
+  think: true,
 });
 // Define tools
 const add = tool(({ a, b }) => a + b, {
@@ -74,7 +76,7 @@ async function llmCall(state: MessagesStateType) {
   return {
     messages: [await modelWithTools.invoke([
       new SystemMessage(
-        "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+        "你是一名乐于助人的助手，任务是对一组输入数据进行算术运算。"
       ),
       ...state.messages,
     ])],
@@ -92,6 +94,10 @@ async function toolNode(state: MessagesStateType) {
   if (lastMessage == null || !AIMessage.isInstance(lastMessage)) {
     return { messages: [] };
   }
+
+  // const checkPointer = new MemorySaver();
+
+  // await interrupt('我是拦截器，我拦截了工具调用的执行过程');
 
   const result: ToolMessage[] = [];
   for (const toolCall of lastMessage.tool_calls ?? []) {
@@ -132,12 +138,17 @@ const agent = new StateGraph(MessagesState)
   .addEdge("toolNode", "llmCall")
   .compile();
 
+agent.name = "New Agent";
+
 // Invoke
 import { HumanMessage } from "@langchain/core/messages";
 const result = await agent.invoke({
-  messages: [new HumanMessage("Add 10 and 4.")],
-});
+  messages: [{role: "user", content: new HumanMessage("Multiply 10 and 4.").content}],
+}, { configurable: { thread_id: "1" }, streamMode: "values" });
 
 for (const message of result.messages) {
   console.log(`[${message.type}]: ${message.text}`);
 }
+
+
+console.log("Total LLM calls:", result);
