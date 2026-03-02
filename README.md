@@ -4,6 +4,7 @@
 - [如何为 LangGraph.js 应用程序设置部署](https://www.langgraphcn.org/cloud/deployment/setup_javascript/)
 - [@langchain/ollama](https://www.npmjs.com/package/@langchain/ollama)
 - [Agentic Design Patterns](https://github.com/xindoo/agentic-design-patterns)
+- [Claude Code 中文文档](https://code.claude.com/docs/zh-CN/overview)
 
 # MCP 
 

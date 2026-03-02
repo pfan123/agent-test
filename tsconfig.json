@@ -1,19 +1,18 @@
 {
-    "compilerOptions": {
-        "target": "es2022",
-        "module": "es2022",
-        "types": [
-            "node"
-          ],
-        "lib": ["es2015", "es2016", "es2017", "dom", "es2022"],
-        "moduleResolution": "node",
-        "outDir": "dist",
-        "resolveJsonModule": true,
-        "emitDecoratorMetadata": true,
-        "esModuleInterop": true,
-        "experimentalDecorators": true,
-        "sourceMap": true
-    },
-    "include": ["*.ts", "**/*.ts", "**/*.tsx"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
- }
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "es2022",
+    "types": ["node"],
+    "lib": ["es2015", "es2016", "es2017", "dom", "es2022"],
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}
