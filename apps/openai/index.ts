@@ -1,9 +1,17 @@
 import OpenAI from "openai";
 
+// 从环境变量获取 API Key
+const apiKey = process.env.OPENAI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("环境变量 OPENAI_API_KEY 未设置");
+}
+
 // OpenAI API 兼容 https://docs.bigmodel.cn/cn/guide/develop/openai/introduction
 const client = new OpenAI({
-  apiKey: "6d935f7d9daf4de6af6321ccf114ec21.pVttR5u0ulg63yTP",
-  baseURL: "https://open.bigmodel.cn/api/paas/v4/",
+  apiKey,
+  baseURL:
+    process.env.OPENAI_BASE_URL || "https://open.bigmodel.cn/api/paas/v4/",
 });
 
 const tools = [
@@ -29,7 +37,7 @@ const tools = [
 
 const response = await client.chat.completions.create({
   model: "glm-5",
-  tools,
+  // tools,
   messages: [
     {
       role: "system",

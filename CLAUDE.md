@@ -65,6 +65,7 @@ The langchain app contains two main agent implementations:
 ### State Management Pattern
 
 LangGraph agents use this pattern:
+
 - Define state with `Annotation.Root()` extending `MessagesAnnotation`
 - Create nodes that return state updates
 - Use conditional edges with `shouldContinue` logic
@@ -73,11 +74,14 @@ LangGraph agents use this pattern:
 ### Tool Definition Pattern
 
 Tools are defined using `@langchain/core/tools`:
+
 ```typescript
 const toolName = tool(({ params }) => result, {
   name: "toolName",
   description: "What it does",
-  schema: z.object({ /* zod validation */ }),
+  schema: z.object({
+    /* zod validation */
+  }),
 });
 ```
 
@@ -94,6 +98,7 @@ const toolName = tool(({ params }) => result, {
 ### Prerequisites
 
 For the calculator agent to work, Ollama must be running locally:
+
 ```bash
 ollama serve  # Runs on http://127.0.0.1:11434
 ```
@@ -101,6 +106,7 @@ ollama serve  # Runs on http://127.0.0.1:11434
 ### API Keys
 
 The `agent.ts` file requires environment variables (set at top of file):
+
 - `OPENAI_API_KEY` - OpenAI API key
 - `TAVILY_API_KEY` - Tavily search API key
 
@@ -111,6 +117,33 @@ The calculator uses `qwen3-vl:8b` by default. To use different Ollama models, mo
 ## Documentation
 
 The `docs/` folder contains Chinese documentation on:
+
 - **Agent思考框架.md** - Comprehensive comparison of 2026 Agent architectures (ReAct, Plan-and-Execute, CoT, Reflexion, Tree of Thoughts, Memory-Centric, MCP-driven)
 - **概念.md** - Core concepts including Agentic RAG, A2A (Agent-to-Agent) protocols, MCP vs A2A scope differences
 - **大模型本地化部署调试.md** - Local model deployment with Ollama
+
+# Code style
+
+- Use ES modules (import/export) syntax, not CommonJS (require)
+- Destructure imports when possible (eg. import { foo } from 'bar')
+- Use TypeScript strict mode
+
+# Workflow
+
+- Be sure to typecheck when you're done making a series of code changes
+- Prefer running single tests, and not the whole test suite, for performance
+- Always run `npm run lint` before committing
+
+# Testing
+
+- Use Jest for unit tests
+- Put tests in **tests** folder next to the source file
+- Mock external APIs, don't make real network calls in tests
+
+# Project conventions
+
+- Branch naming: feature/xxx, fix/xxx, chore/xxx
+- Commit message format: type(scope): description
+
+See @README.md for project overview.
+See @package.json for available npm commands.

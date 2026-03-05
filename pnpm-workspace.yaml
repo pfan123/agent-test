@@ -1,3 +1,3 @@
 packages:
-  - "apps/langchain"
-  - "apps/openai"
+  - "apps/*"
+  - "packages/*"

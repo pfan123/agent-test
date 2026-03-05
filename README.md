@@ -5,10 +5,9 @@
 - [@langchain/ollama](https://www.npmjs.com/package/@langchain/ollama)
 - [Agentic Design Patterns](https://github.com/xindoo/agentic-design-patterns)
 - [Claude Code 中文文档](https://code.claude.com/docs/zh-CN/overview)
+- [Claude Code 学习教程](https://github.com/linjh1118/claude-code-tutorial)
 
-# MCP 
+# MCP
 
 - [什么是MCP](https://github.com/punkpeye/awesome-mcp-servers/blob/main/README-zh.md)
 - [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk)
-
-
