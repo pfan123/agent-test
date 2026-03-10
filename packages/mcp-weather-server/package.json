@@ -1,0 +1,18 @@
+{
+  "name": "mcp-weather-server",
+  "version": "1.0.0",
+  "description": "MCP Weather Server for fishing suitability check",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3"
+  }
+}
