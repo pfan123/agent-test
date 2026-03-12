@@ -4,13 +4,9 @@
  * 地名转坐标服务
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
 
 const cityCoordinates: Record<
   string,
@@ -61,7 +57,7 @@ async function geocodeCity(
   return null;
 }
 
-const server = new Server(
+const server = new McpServer(
   {
     name: "mcp-geocoding-server",
     version: "1.0.0",
@@ -73,33 +69,25 @@ const server = new Server(
   },
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "geocode",
-        description: "将地名转换为经纬度坐标",
-        inputSchema: {
-          type: "object",
-          properties: {
-            location: {
-              type: "string",
-              description: "城市或地区名称，例如：深圳、北京、东京、纽约等",
-            },
-          },
-          required: ["location"],
-        },
-      },
-    ],
-  };
-});
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  if (name === "geocode") {
-    const { location } = args as { location: string };
-
+server.registerTool(
+  "geocode",
+  {
+    description: "将地名转换为经纬度坐标",
+    inputSchema: {
+      location: z
+        .string()
+        .describe("城市或地区名称，例如：深圳、北京、东京、纽约等"),
+    },
+    outputSchema: {
+      content: z.array(
+        z.object({
+          type: z.literal("text"),
+          text: z.string(),
+        }),
+      ),
+    },
+  },
+  async ({ location }) => {
     if (!location) {
       throw new Error("缺少必需参数: location");
     }
@@ -122,10 +110,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         },
       ],
     };
-  }
-
-  throw new Error(`未知的工具: ${name}`);
-});
+  },
+);
 
 async function main() {
   const transport = new StdioServerTransport();
