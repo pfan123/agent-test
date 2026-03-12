@@ -4,12 +4,9 @@
  * 提供天气查询工具，用于判断是否适合钓鱼
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
 
 interface WeatherData {
   location: string;
@@ -27,7 +24,10 @@ interface WeatherData {
   };
 }
 
-const cityCoordinates: Record<string, { lat: number; lon: number; country?: string }> = {
+const cityCoordinates: Record<
+  string,
+  { lat: number; lon: number; country?: string }
+> = {
   深圳: { lat: 22.5431, lon: 114.0579, country: "中国" },
   北京: { lat: 39.9042, lon: 116.4074, country: "中国" },
   上海: { lat: 31.2304, lon: 121.4737, country: "中国" },
@@ -59,7 +59,10 @@ const cityCoordinates: Record<string, { lat: number; lon: number; country?: stri
   台北: { lat: 25.033, lon: 121.5654, country: "中国台湾" },
 };
 
-async function fetchWithTimeout(url: string, timeout = 15000): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  timeout = 15000,
+): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -72,24 +75,49 @@ async function fetchWithTimeout(url: string, timeout = 15000): Promise<Response>
 
 function weatherCodeToCondition(code: number): string {
   const codeMap: Record<number, string> = {
-    0: "晴", 1: "晴间多云", 2: "多云", 3: "阴",
-    45: "雾", 48: "雾凇",
-    51: "小毛毛雨", 53: "中毛毛雨", 55: "大毛毛雨",
-    61: "小雨", 63: "中雨", 65: "大雨",
-    71: "小雪", 73: "中雪", 75: "大雪",
-    80: "小阵雨", 81: "中阵雨", 82: "大阵雨",
-    95: "雷暴", 96: "雷暴加冰雹", 99: "强雷暴加冰雹",
+    0: "晴",
+    1: "晴间多云",
+    2: "多云",
+    3: "阴",
+    45: "雾",
+    48: "雾凇",
+    51: "小毛毛雨",
+    53: "中毛毛雨",
+    55: "大毛毛雨",
+    61: "小雨",
+    63: "中雨",
+    65: "大雨",
+    71: "小雪",
+    73: "中雪",
+    75: "大雪",
+    80: "小阵雨",
+    81: "中阵雨",
+    82: "大阵雨",
+    95: "雷暴",
+    96: "雷暴加冰雹",
+    99: "强雷暴加冰雹",
   };
   return codeMap[code] || "未知";
 }
 
 function windDegreeToDirection(degree: number): string {
-  const directions = ["北风", "东北风", "东风", "东南风", "南风", "西南风", "西风", "西北风"];
+  const directions = [
+    "北风",
+    "东北风",
+    "东风",
+    "东南风",
+    "南风",
+    "西南风",
+    "西风",
+    "西北风",
+  ];
   const index = Math.round(degree / 45) % 8;
   return directions[index];
 }
 
-function assessFishingSuitability(weather: Omit<WeatherData, "fishingSuitability">) {
+function assessFishingSuitability(
+  weather: Omit<WeatherData, "fishingSuitability">,
+) {
   const reasons: string[] = [];
   let score = 100;
 
@@ -117,8 +145,12 @@ function assessFishingSuitability(weather: Omit<WeatherData, "fishingSuitability
 
   const goodConditions = ["晴", "多云", "阴"];
   const badConditions = ["雨", "雷", "雪", "雾"];
-  const hasBadCondition = badConditions.some((c) => weather.condition.includes(c));
-  const hasGoodCondition = goodConditions.some((c) => weather.condition.includes(c));
+  const hasBadCondition = badConditions.some((c) =>
+    weather.condition.includes(c),
+  );
+  const hasGoodCondition = goodConditions.some((c) =>
+    weather.condition.includes(c),
+  );
 
   if (hasBadCondition) {
     score -= 35;
@@ -159,12 +191,19 @@ function assessFishingSuitability(weather: Omit<WeatherData, "fishingSuitability
 async function geocodeCity(cityName: string) {
   if (cityCoordinates[cityName]) {
     const c = cityCoordinates[cityName];
-    return { lat: c.lat, lon: c.lon, displayName: `${cityName}, ${c.country || "中国"}` };
+    return {
+      lat: c.lat,
+      lon: c.lon,
+      displayName: `${cityName}, ${c.country || "中国"}`,
+    };
   }
   return null;
 }
 
-async function fetchWeather(locationOrCoords: string | { latitude: number; longitude: number }, displayName?: string) {
+async function fetchWeather(
+  locationOrCoords: string | { latitude: number; longitude: number },
+  displayName?: string,
+) {
   let lat: number;
   let lon: number;
   let locName: string;
@@ -209,7 +248,7 @@ async function fetchWeather(locationOrCoords: string | { latitude: number; longi
   return { ...baseWeather, fishingSuitability };
 }
 
-const server = new Server(
+const server = new McpServer(
   {
     name: "mcp-weather-server",
     version: "1.0.0",
@@ -218,43 +257,31 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "get_weather_for_fishing",
-        description: "获取指定位置的天气信息，并判断是否适合钓鱼",
-        inputSchema: {
-          type: "object",
-          properties: {
-            location: {
-              type: "string",
-              description: "城市或地区名称，例如：深圳、北京、上海、东京、纽约等",
-            },
-            latitude: {
-              type: "number",
-              description: "纬度（可选，与 longitude 一起使用）",
-            },
-            longitude: {
-              type: "number",
-              description: "经度（可选，与 latitude 一起使用）",
-            },
-          },
-        },
-      },
-    ],
-  };
-});
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  if (name === "get_weather_for_fishing") {
-    const { location, latitude, longitude } = args as { location?: string; latitude?: number; longitude?: number };
-
+server.registerTool(
+  "get_weather_for_fishing",
+  {
+    description: "获取指定位置的天气信息，并判断是否适合钓鱼",
+    inputSchema: {
+      location: z
+        .string()
+        .describe("城市或地区名称，例如：深圳、北京、上海、东京、纽约等"),
+      latitude: z.number().describe("纬度（可选，与 longitude 一起使用）"),
+      longitude: z.number().describe("经度（可选，与 latitude 一起使用）"),
+    },
+    outputSchema: {
+      temperature: z.number().describe("温度，单位摄氏度"),
+      condition: z.string().describe("天气状况"),
+      humidity: z.number().describe("湿度"),
+      windSpeed: z.number().describe("风速"),
+      windDirection: z.string().describe("风向"),
+      visibility: z.number().describe("能见度"),
+      pressure: z.number().describe("气压"),
+    },
+  },
+  async ({ location, latitude, longitude }) => {
     let weatherData;
 
     if (latitude !== undefined && longitude !== undefined) {
@@ -265,7 +292,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw new Error("需要提供 location 或 latitude/longitude 参数");
     }
 
-    const { location: loc, temperature, condition, humidity, windSpeed, windDirection, visibility, pressure, fishingSuitability } = weatherData;
+    const {
+      location: loc,
+      temperature,
+      condition,
+      humidity,
+      windSpeed,
+      windDirection,
+      visibility,
+      pressure,
+      fishingSuitability,
+    } = weatherData;
 
     return {
       content: [
@@ -289,11 +326,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 ${fishingSuitability.reasons.map((r) => `  • ${r}`).join("\n")}`,
         },
       ],
+      structuredContent: {
+        temperature,
+        condition,
+        humidity,
+        windSpeed,
+        windDirection,
+        visibility,
+        pressure,
+      },
     };
-  }
-
-  throw new Error(`未知的工具: ${name}`);
-});
+  },
+);
 
 async function main() {
   const transport = new StdioServerTransport();

@@ -6,6 +6,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+// import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
 const cityCoordinates: Record<
@@ -79,12 +80,9 @@ server.registerTool(
         .describe("城市或地区名称，例如：深圳、北京、东京、纽约等"),
     },
     outputSchema: {
-      content: z.array(
-        z.object({
-          type: z.literal("text"),
-          text: z.string(),
-        }),
-      ),
+      latitude: z.number().describe("纬度"),
+      longitude: z.number().describe("经度"),
+      displayName: z.string().describe("地名的显示名称，例如：深圳, 中国"),
     },
   },
   async ({ location }) => {
@@ -98,17 +96,20 @@ server.registerTool(
       throw new Error(`未找到城市: ${location}`);
     }
 
+    const locationInfo = {
+      latitude: geoResult.lat,
+      longitude: geoResult.lon,
+      displayName: geoResult.displayName,
+    };
+
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify({
-            latitude: geoResult.lat,
-            longitude: geoResult.lon,
-            displayName: geoResult.displayName,
-          }),
+          text: JSON.stringify(locationInfo),
         },
       ],
+      structuredContent: locationInfo,
     };
   },
 );

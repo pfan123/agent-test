@@ -1,0 +1,82 @@
+在 MCP (Model Context Protocol) 中，`StdioServerTransport` 和 `StreamableHTTPServerTransport` 是传输层的两种核心实现，核心区别在于**通信载体、适用场景和交互方式**，下面我会从新手易懂的角度详细拆解它们的差异。
+
+### 一、核心概念与本质区别
+先通过一个简单的比喻理解：
+- `StdioServerTransport`：相当于“本地管道”，通过进程的**标准输入/输出 (stdin/stdout)** 通信，是“进程内/本地进程间”的直接对话。
+- `StreamableHTTPServerTransport`：相当于“网络电话”，基于 **HTTP 协议+流式传输** 通信，是“跨网络/跨进程”的远程对话。
+
+### 二、详细对比与使用场景
+#### 1. StdioServerTransport
+**核心逻辑**：
+绑定到当前进程的标准输入（stdin）和标准输出（stdout），服务器端从 stdin 读取客户端发送的 MCP 消息，处理后通过 stdout 返回结果。
+
+**关键特点**：
+- 无网络依赖，纯本地通信，延迟极低；
+- 仅支持**单客户端**（一个 stdio 管道只能对应一个客户端进程）；
+- 适用于“进程内集成”或“本地父子进程通信”（比如本地 CLI 工具调用 MCP 服务）；
+- 无需配置端口、IP，开箱即用，但无法跨机器访问。
+
+**简单示例代码**：
+```python
+from mcp.server import Server
+from mcp.server.transports import StdioServerTransport
+
+# 初始化服务器
+server = Server(...)  # 省略MCP服务核心配置
+
+# 使用Stdio传输层启动
+transport = StdioServerTransport(server)
+transport.start()  # 启动后，通过stdin/stdout与客户端通信
+```
+
+#### 2. StreamableHTTPServerTransport
+**核心逻辑**：
+基于 HTTP 协议封装 MCP 消息，支持**流式响应**（比如大模型的实时输出），本质是一个 HTTP 服务器，客户端通过 HTTP 请求（POST/GET）与服务器交互。
+
+**关键特点**：
+- 基于网络通信，支持**多客户端**并发访问；
+- 可跨机器、跨网络（比如远程服务器部署 MCP 服务，本地客户端通过 IP+端口访问）；
+- 支持流式传输（Stream），适合需要实时返回部分结果的场景（如大模型逐字输出）；
+- 需要配置端口、IP，依赖网络环境，延迟略高于本地 stdio。
+
+**简单示例代码**：
+```python
+from mcp.server import Server
+from mcp.server.transports import StreamableHTTPServerTransport
+
+# 初始化服务器
+server = Server(...)  # 省略MCP服务核心配置
+
+# 使用HTTP流式传输层启动（指定IP和端口）
+transport = StreamableHTTPServerTransport(
+    server,
+    host="0.0.0.0",  # 允许所有IP访问
+    port=8080        # 监听8080端口
+)
+transport.start()  # 启动后，客户端可通过http://localhost:8080访问
+```
+
+### 三、核心差异总结表
+| 维度                | StdioServerTransport                | StreamableHTTPServerTransport        |
+|---------------------|--------------------------------------|---------------------------------------|
+| 通信载体            | 进程标准输入/输出（stdio）           | HTTP 协议（网络）                     |
+| 访问范围            | 仅本地进程（同一台机器）             | 跨机器/跨网络（支持远程访问）         |
+| 客户端数量          | 单客户端                             | 多客户端并发                          |
+| 延迟                | 极低（无网络开销）                   | 略高（网络传输开销）                  |
+| 配置复杂度          | 零配置（无需端口/IP）                | 需要配置IP、端口，依赖网络            |
+| 流式响应            | 支持（但仅限本地）                   | 原生支持（核心设计目标之一）          |
+| 适用场景            | 本地CLI工具、进程内集成              | 远程服务部署、多客户端访问、流式输出  |
+
+### 四、实际使用建议
+- 如果你开发的是**本地工具**（比如本地运行的AI助手CLI），优先用 `StdioServerTransport`，简单、高效、无网络依赖；
+- 如果你需要将 MCP 服务**部署到服务器**，供多客户端（比如前端、其他服务）远程调用，或需要**流式输出**（比如实时返回大模型回答），必须用 `StreamableHTTPServerTransport`。
+
+### 总结
+1. 核心区别：`StdioServerTransport` 是**本地 stdio 通信**，适合单机场景；`StreamableHTTPServerTransport` 是**HTTP 网络通信**，适合远程/多客户端场景。
+2. 性能与易用性：Stdio 延迟更低、配置更简单；HTTP 传输层扩展性更强、适用范围更广。
+3. 选型关键：看是否需要**跨网络访问**或**多客户端并发**——需要则选 HTTP 版本，否则选 Stdio 版本。
+
+
+### 参考示例
+
+[【AI助手】从零构建文章抓取器 MCP（Node.js 版）](https://www.cnblogs.com/clnchanpin/p/19587207)
