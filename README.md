@@ -11,3 +11,7 @@
 
 - [什么是MCP](https://github.com/punkpeye/awesome-mcp-servers/blob/main/README-zh.md)
 - [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk)
+
+# 好用的 SKILLS
+
+- [Marketing Skills for AI Agents](https://github.com/coreyhaines31/marketingskills)
