@@ -194,7 +194,7 @@ async function llmCall(state: MessagesStateType) {
       "你是一个钓鱼助手。当用户询问某个地点是否适合钓鱼时，你需要按以下步骤执行：\n" +
         "1. 首先调用 geocode 工具获取城市的经纬度坐标\n" +
         "2. 然后调用 get_weather_for_fishing 工具获取天气信息（传入 latitude 和 longitude 参数）\n" +
-        "3. 获取天气后，直接返回钓鱼建议，不要再调用任何工具\n" +
+        "3. 获取天气后，直接返回钓鱼建议以及出钓渔获预测，不要再调用任何工具\n" +
         "重要：获取到天气数据后必须立即给出最终答案，不要再次调用工具！",
     ),
     ...state.messages,
