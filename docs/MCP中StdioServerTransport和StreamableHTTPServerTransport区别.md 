@@ -79,4 +79,5 @@ transport.start()  # 启动后，客户端可通过http://localhost:8080访问
 
 ### 参考示例
 
+[MCP server-quickstart](https://github.com/modelcontextprotocol/typescript-sdk/tree/main/examples/server-quickstart)
 [【AI助手】从零构建文章抓取器 MCP（Node.js 版）](https://www.cnblogs.com/clnchanpin/p/19587207)
