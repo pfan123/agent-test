@@ -6,7 +6,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "tsx index.ts",
-    "dev": "tsx watch index.ts"
+    "dev": "tsx watch index.ts",
+    "test": "npx @modelcontextprotocol/inspector bun ./index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.8.0",

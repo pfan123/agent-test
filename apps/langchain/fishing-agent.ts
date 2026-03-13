@@ -201,7 +201,7 @@ async function llmCall(state: MessagesStateType) {
   ]);
 
   debug("LLM 返回, tool_calls:", result.tool_calls?.length || 0);
-  debug("LLM content:", (result.content || "").substring(0, 200));
+  debug("LLM content:", ((result.content as string) || "").substring(0, 200));
 
   return { messages: [result] };
 }
