@@ -1,3 +1,5 @@
+# MCP中 StdioServerTransport 和 StreamableHTTPServerTransport 区别
+
 在 MCP (Model Context Protocol) 中，`StdioServerTransport` 和 `StreamableHTTPServerTransport` 是传输层的两种核心实现，核心区别在于**通信载体、适用场景和交互方式**，下面我会从新手易懂的角度详细拆解它们的差异。
 
 ### 一、核心概念与本质区别
