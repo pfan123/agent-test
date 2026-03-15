@@ -1,39 +1,14 @@
-import { ChatOllama } from "@langchain/ollama";
 import { tool } from "@langchain/core/tools";
-import {
-  StateGraph,
-  START,
-  END,
-  Annotation,
-  GraphNode,
-} from "@langchain/langgraph";
-import {
-  AIMessage,
-  ToolMessage,
-  SystemMessage,
-} from "@langchain/core/messages";
+import { StateGraph, START, END } from "@langchain/langgraph";
+import { AIMessage } from "@langchain/core/messages";
 import { spawn, ChildProcess } from "child_process";
 import * as z from "zod";
-
-const DEBUG = true;
-
-const model = new ChatOllama({
-  model: "qwen3-vl:8b",
-  baseUrl: "http://127.0.0.1:11434",
-  temperature: 0.7,
-  numPredict: 1024,
-  streaming: false,
-  think: false,
-});
-
-const MessagesState = Annotation.Root({
-  messages: Annotation({
-    reducer: (a, b) => [...a, ...b],
-    default: () => [],
-  }),
-});
-
-type MessagesStateType = typeof MessagesState.State;
+import { debug } from "@utils/debug";
+import { error } from "@utils/error";
+import { MessagesState } from "./fishing-agent-state";
+import { mcpToolNode } from "./nodes/mcp-tool-node";
+import { llmCall } from "./nodes/llm-call";
+import { MessagesStateType, type ToolsByName } from "./types";
 
 let geocodingProcess: ChildProcess;
 let weatherProcess: ChildProcess;
@@ -42,16 +17,6 @@ const pendingRequests = new Map<
   number,
   { resolve: Function; reject: Function }
 >();
-
-function debug(...args: any[]) {
-  if (DEBUG) {
-    console.log("[DEBUG]", new Date().toISOString(), ...args);
-  }
-}
-
-function error(...args: any[]) {
-  console.error("[ERROR]", new Date().toISOString(), ...args);
-}
 
 function startMcpServer(
   name: string,
@@ -184,69 +149,7 @@ async function getMcpTools(process: ChildProcess, serverName: string) {
   });
 }
 
-let toolsByName: Record<string, any>;
-
-const llmCall: GraphNode<typeof MessagesState> = async (
-  state: MessagesStateType,
-) => {
-  debug("=== llmCall 开始 ===");
-  debug("消息数量:", state.messages.length);
-
-  const tools = Object.values(toolsByName);
-  debug("可用工具:", tools.map((t: any) => t.name).join(", "));
-
-  const modelWithTools = model.bindTools(tools);
-
-  const result = await modelWithTools.invoke([
-    new SystemMessage(
-      "你是一个钓鱼助手。当用户询问某个地点是否适合钓鱼时，你需要按以下步骤执行：\n" +
-        "1. 首先调用 geocode 工具获取城市的经纬度坐标\n" +
-        "2. 然后调用 get_weather_for_fishing 工具获取天气信息（传入 location, latitude 和 longitude 参数）\n" +
-        "3. 获取天气后，评估钓鱼指数分数，并直接返回钓鱼建议以及出钓渔获预测，不要再调用任何工具\n" +
-        "重要：获取到天气数据后必须立即给出最终答案，不要再次调用工具！",
-    ),
-    ...state.messages,
-  ]);
-
-  debug("LLM 返回, tool_calls:", result.tool_calls?.length || 0);
-  debug("LLM content:", ((result.content as string) || "").substring(0, 200));
-
-  return { messages: [result] };
-};
-
-async function toolNode(state: MessagesStateType) {
-  debug("=== toolNode 开始 ===");
-
-  const lastMessage = state.messages.at(-1);
-
-  if (lastMessage == null || !AIMessage.isInstance(lastMessage)) {
-    debug("非 AI 消息，跳过");
-    return { messages: [] };
-  }
-
-  debug("工具调用数量:", lastMessage.tool_calls?.length || 0);
-
-  const result: ToolMessage[] = [];
-  for (const toolCall of lastMessage.tool_calls ?? []) {
-    debug("执行工具:", toolCall.name, toolCall.args);
-
-    const tool = toolsByName[toolCall.name as keyof typeof toolsByName];
-    if (tool) {
-      try {
-        const observation = await tool.invoke(toolCall);
-        debug("工具返回:", (observation.content as string)?.substring(0, 200));
-        result.push(observation);
-      } catch (e) {
-        error("工具执行错误:", e);
-        throw e;
-      }
-    } else {
-      error("未找到工具:", toolCall.name);
-    }
-  }
-
-  return { messages: result };
-}
+let toolsByName: ToolsByName = {};
 
 async function shouldContinue(state: MessagesStateType) {
   const lastMessage = state.messages.at(-1);
@@ -366,7 +269,7 @@ async function main() {
 
   const agent = new StateGraph(MessagesState)
     .addNode("llmCall", llmCall)
-    .addNode("toolNode", toolNode)
+    .addNode("toolNode", mcpToolNode)
     .addEdge(START, "llmCall")
     .addConditionalEdges("llmCall", shouldContinue, ["toolNode", END])
     .addEdge("toolNode", "llmCall")
