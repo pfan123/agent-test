@@ -1,6 +1,12 @@
 import { ChatOllama } from "@langchain/ollama";
 import { tool } from "@langchain/core/tools";
-import { StateGraph, START, END, Annotation } from "@langchain/langgraph";
+import {
+  StateGraph,
+  START,
+  END,
+  Annotation,
+  GraphNode,
+} from "@langchain/langgraph";
 import {
   AIMessage,
   ToolMessage,
@@ -180,7 +186,9 @@ async function getMcpTools(process: ChildProcess, serverName: string) {
 
 let toolsByName: Record<string, any>;
 
-async function llmCall(state: MessagesStateType) {
+const llmCall: GraphNode<typeof MessagesState> = async (
+  state: MessagesStateType,
+) => {
   debug("=== llmCall 开始 ===");
   debug("消息数量:", state.messages.length);
 
@@ -204,7 +212,7 @@ async function llmCall(state: MessagesStateType) {
   debug("LLM content:", ((result.content as string) || "").substring(0, 200));
 
   return { messages: [result] };
-}
+};
 
 async function toolNode(state: MessagesStateType) {
   debug("=== toolNode 开始 ===");
