@@ -4,6 +4,7 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { MemorySaver, Command, isInterrupted } from "@langchain/langgraph";
 import { z } from "zod";
 import { debug } from "@utils/debug";
+import { v4 as uuidv4 } from "uuid";
 import { EmailAgentState } from "./email-agent-state";
 import { readEmail, classifyIntent } from "./nodes/classify-email-node";
 import { searchDocumentation } from "./nodes/search-documentation";
@@ -100,7 +101,9 @@ async function main() {
   const agent = workflow.compile({ checkpointer: new MemorySaver() });
   agent.name = "Email Agent";
 
-  const config = { configurable: { thread_id: "unique_id_123" } };
+  const threadId = uuidv4();
+
+  const config = { configurable: { thread_id: threadId } };
 
   const result = await agent.invoke(
     {
