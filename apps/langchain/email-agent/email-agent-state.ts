@@ -10,6 +10,9 @@ export const EmailClassificationSchema = z.object({
 });
 
 export const EmailAgentState = new StateSchema({
+  // Messages for conversation
+  messages: z.array(z.any()),
+
   // Raw email data
   emailContent: z.string(),
   senderEmail: z.string(),

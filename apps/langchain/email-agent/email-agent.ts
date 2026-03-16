@@ -1,7 +1,7 @@
 // @reffer https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph#llm-recoverable
 import { tool } from "@langchain/core/tools";
 import { StateGraph, START, END } from "@langchain/langgraph";
-import { MemorySaver, Command, GraphInterrupt } from "@langchain/langgraph";
+import { MemorySaver, Command, isInterrupted } from "@langchain/langgraph";
 import { z } from "zod";
 import { debug } from "@utils/debug";
 import { EmailAgentState } from "./email-agent-state";
@@ -100,35 +100,31 @@ async function main() {
   const agent = workflow.compile({ checkpointer: new MemorySaver() });
   agent.name = "Email Agent";
 
-  let result;
   const config = { configurable: { thread_id: "unique_id_123" } };
 
-  try {
-    result = await agent.invoke(
-      {
-        messages: [`请处理这封邮件: ${emailContent} (发件人: ${senderEmail})`],
-        emailContent,
-        senderEmail,
-        emailId: "test-123",
-      },
+  const result = await agent.invoke(
+    {
+      messages: [`请处理这封邮件: ${emailContent} (发件人: ${senderEmail})`],
+      emailContent,
+      senderEmail,
+      emailId: "test-123",
+    },
+    config,
+  );
+
+  if (isInterrupted(result)) {
+    console.log("检测到中断，正在自动模拟人工审批恢复...");
+    // 这里可以把 error.interrupts[0].value 返回给前端展示给用户
+
+    await agent.invoke(
+      new Command({
+        resume: {
+          approved: true,
+          editedResponse: "这是经过人工修改后的回复内容。",
+        }, // 这个字符串会变成 Node 里 const val = interrupt() 的返回值
+      }),
       config,
     );
-  } catch (error) {
-    console.error("error", error);
-    if (error instanceof GraphInterrupt) {
-      console.log("检测到中断，正在自动模拟人工审批恢复...", error.interrupts);
-      // 这里可以把 error.interrupts[0].value 返回给前端展示给用户
-
-      await agent.invoke(
-        new Command({
-          resume: "批准执行此操作", // 这个字符串会变成 Node 里 const val = interrupt() 的返回值
-        }),
-        config,
-      );
-    } else {
-      throw error;
-    }
-    debug("Agent error:", error);
   }
 
   if (result) {
